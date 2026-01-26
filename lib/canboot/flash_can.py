@@ -144,6 +144,9 @@ class CanFlasher:
                         read_done = len(data) == recd_len + 8
                         break
 
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                # Common during initial boot/re-enumeration; retry silently (or debug-log)
+                logging.debug("Can read timeout during '%s' (will retry)", cmdname)
             except Exception:
                 logging.exception("Can Read Error")
             else:
