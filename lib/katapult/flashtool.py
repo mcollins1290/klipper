@@ -349,17 +349,25 @@ class CanFlasher:
                         data.clear()
                         self.primed = False
                         read_done = False
+
             except asyncio.CancelledError:
                 raise
+
             except asyncio.TimeoutError:
-                logging.info(
+                log_msg = (
                     f"Response for command {cmdname} timed out, "
                     f"{tries - 1} tries remaining"
                 )
+                if cmdname == "CONNECT":
+                    logging.debug(log_msg)
+                else:
+                    logging.info(log_msg)
+
             except Exception as e:
                 if type(e) is type(last_err) and e.args == last_err.args:
                     last_err = e
                     logging.exception("Device Read Error")
+
             else:
                 trailer = data[-2:]
                 recd_crc, = struct.unpack("<H", data[-4:-2])
@@ -395,7 +403,9 @@ class CanFlasher:
                     if recd_len <= 4:
                         return bytearray()
                     return data[8:recd_len + 4]
+
             tries -= 1
+
             # clear the read buffer
             try:
                 ret = await self.node.read(1024, timeout=.25)
@@ -403,7 +413,9 @@ class CanFlasher:
                 pass
             else:
                 logging.info(f"Read Buffer Contents: {ret!r}")
+
             await asyncio.sleep(.5)
+
         raise FlashError("Error sending command [%s] to Device" % (cmdname))
 
     async def send_file(self):
